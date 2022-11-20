@@ -86,7 +86,12 @@ public class AiEntity : MonoBehaviour
                 speed = speed
             };
 
-            JobHandle jobHandle = job.Schedule();
+            JobHandle jobHandle = job.Schedule(position.Length, 32);
+
+            // Ensure the job has completed.
+            // It is not recommended to Complete a job immediately,
+            // since that reduces the chance of having other jobs run in parallel with this one.
+            // You optimally want to schedule a job early in a frame and then wait for it later in the frame.
             jobHandle.Complete();
 
             force = job.force[0];
@@ -118,7 +123,7 @@ public class AiEntity : MonoBehaviour
 }
 
 [BurstCompile]
-public struct VelocityJob : IJob
+public struct VelocityJob : IJobParallelFor
 {
     // Jobs declare all data that will be accessed in the job
     // By declaring it as read only, multiple jobs are allowed to access the data in parallel
@@ -136,10 +141,10 @@ public struct VelocityJob : IJob
     public float speed;
 
     // The code actually running on the job
-    public void Execute()
+    public void Execute(int i)
     {
         // Move the positions based on delta time and velocity
-        var dir = (target[0] - position[0]).normalized;
-        force[0] = dir * speed * deltaTime;
+        var dir = (target[i] - position[i]).normalized;
+        force[i] = dir * speed * deltaTime;
     }
 }
